@@ -1,0 +1,142 @@
+
+                REPORT OF PROJECT 1
+
+                FINDING PRIME NUMBER
+
+                LEI YAN
+
+1.  PROGRAM LIST
+      see end of this report.
+
+RESULT:
+prime number between 1 and 400:
+   2      3      5      7     11     13     17     19     23     29   
+  31     37     41     43     47     53     59     61     67     71   
+  73     79     83     89     97    101    103    107    109    113   
+ 127    131    137    139    149    151    157    163    167    173   
+ 179    181    191    193    197    199    211    223    227    229   
+ 233    239    241    251    257    263    269    271    277    281   
+ 283    293    307    311    313    317    331    337    347    349   
+ 353    359    367    373    379    383    389    397   
+
+ALGORITHM
+I partition all the data as equal part to all of the procesors. 
+Procesor 0 is responsible for find the prime number which are
+less than the square root of total number. When Procesor 0 is
+finding these prime numbers, other procesors are idle. This will
+only use a fraction of total time. After Procesor 0 got all these
+prime numbers, it will broadcast these number to all other 
+Procesors all at one time. Then, all processors will mark the 
+data it responsible for, with no communication hereafter.
+After a processor is done, it will report the time it consumed.
+
+The reason I broadcast all the prime number at one time is that
+broadcast one number at a time use too much time. I tried a program
+to broadcast one number at a time, it is slow. The running time for
+diferent processors varies too much. Since MPI_Bcast use tree like
+operation, the running time for some processors may be 0.4 second,
+while some use 0.8 second. This diference is made by communication,
+because the load for each processor is about equal. So I changed 
+to broadcast all at one time.  The cost is all processor except 0 
+is idle before the numbers are available, but this only use about 
+1/10 of total time.This results in 3 times speedup.
+
+I use one integer, which is 32bit, to represent 32 number. When mark
+the data, if the prime number used is less than 32, I create 
+an array of 32 masks to assist the operation. Each mask is a integer.
+The ith element of the array is the mask to mark the data with AND 
+operation, if the ith bit of data is known to represent a mutiple
+of the prime number. Also I use a status transfer array, which 
+record the next mask to use. That is, if the ith bit of current
+integer is a mutiple of the prime number, then jth bit of the next
+integer should be the first mutiple of the prime number in that 
+integer. This results in 1/3 times speedup.
+
+2.PERFORMENCE OF DIFFERENT PROCESSORS FOR N=16M.
+
+num of proc      time(s)    
+1                3.257032      
+2                1.843231
+3                1.146006
+4                0.763645
+5                0.569267
+6                0.357054
+7                0.245709
+8                0.140052
+9                0.116154
+10               0.105685
+11               0.095349
+12               0.087911
+13               0.081963
+14               0.075958
+15               0.072318
+16               0.068912
+
+sequential time  1.29s.
+
+Fig 1 is the speedup vs number of processors.
+I use a sequential program to get the sequential time. The 
+sequential time is 1.29 second.
+
+It shows almost linear speedup, since I have reduced the
+communication. It is linear from 1 processor to 6 processors,
+and from 8 processoris to 16 processors. In this two segment
+the speedup increase as the number of processors increase.
+For number of processors of 8 to 16, speedup is propotional
+to number of processors. Thus communication overhead is low.
+
+However, there is jump from 6 processors to 8 processor.
+When using 8 processors, it is much faster than projected
+from the running time for processors less than 6. The reason
+may be the advantage of cache. It seems Ultra5 has 256K cache,
+which can represent 256k * 8 = 2M numbers. While N = 16M and
+P = 8, each processor is responsible for just 2M data, which
+will use the cache best. For P<8, where the memory will exceed
+256K, the program could not get enough advantage from cache,
+thus it slow down.
+
+The running time for each processor is about the same, except
+processor 0, which means load is well balanced. The load for
+processor 0 is just a little lighter than other, for instance,
+the running time for other processor may be 0.13 second, 
+while  processor 0 is 0.10 second. So there is no need to
+adjust the load, because it can hardly get some improvement.
+
+Since when processor 0 is searching for prime numbers small
+than SQRT(N) other processors are idle, it might be a good
+idea to search only of portion of those number at one time . 
+However, the improvement is at most 10 percent of running 
+time,because the search is just using less than 10 percent
+of running time.
+
+3.PERFORMENCE OF DIFFERENT N FOR 8 PROCESSORS.
+             time(s)
+N         8 proc      1 proc
+4e5      0.004137    0.017999
+8e5      0.006083    0.037530
+2e6      0.015534    0.105386 
+4e6      0.030854    0.528538
+8e6      0.063772    1.395217
+16e6     0.139717    3.322564
+32e6     0.803382    7.260748
+64e6     2.100357    15.884138
+
+Fig 2 is the speedup vs total number.
+Here I use the time for 1 processor as the sequential time.
+
+It shows speedup is greatest when N = 16M. And speedup is larger
+when N is between 2M and 16M. Since I use the time for 1 processor 
+as the sequential time,the reason is when N>16M, both program will 
+lose the advantage of cache, and the communication is low, so the
+speedup should near 8; when 16M>N>2M, 8 processor will take the
+advange of cache, 1 processor will lose, so the speedup is great;
+when N<2M, both will take the advange of cache, but the communication
+for 8 processors is greater than 1 processor, so the speedup is
+relatively low. Still, the load for 8 processors are well balanced.
+
+
+4. Time for N=16M and P=8:
+
+    0.140 second
+
+ 
